@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Tastenkappe -->
+  <path d="M4.2 7.6h9.1a1.9 1.9 0 0 1 1.9 1.9v6.1a1.9 1.9 0 0 1-1.9 1.9H4.2a1.9 1.9 0 0 1-1.9-1.9V9.5a1.9 1.9 0 0 1 1.9-1.9z"
+        fill="none" stroke="#e6e6e6" stroke-width="1.6"/>
+  <path d="M5.6 10.6h6.3" fill="none" stroke="#e6e6e6" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Schallwellen -->
+  <path d="M17.4 9.4a4.6 4.6 0 0 1 0 5.9" fill="none" stroke="#e6e6e6"
+        stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M20.2 7.1a8.2 8.2 0 0 1 0 10.5" fill="none" stroke="#e6e6e6"
+        stroke-width="1.6" stroke-linecap="round"/>
+</svg>

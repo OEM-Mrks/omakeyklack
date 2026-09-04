@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=omakeyklack
+GenericName=Keyboard Sounds
+Comment=Mechanische Tastatur-Sounds ein-/ausschalten, Soundpack und Lautstärke wählen
+Comment[en]=Toggle mechanical keyboard sounds, pick a soundpack and volume
+Exec=omakeyklack
+TryExec=omakeyklack
+Icon=omakeyklack
+Terminal=false
+StartupNotify=true
+Categories=AudioVideo;Audio;
+Keywords=wayvibes;keyboard;tastatur;sound;klick;klack;mechanical;soundpack;typing;
