@@ -29,10 +29,16 @@ class Preview:
 
     # -- oeffentlich ----------------------------------------------------
 
-    def play_pack(self, pack: Pack, volume: float) -> None:
-        """Kurze Tippsequenz aus dem Pack abspielen."""
+    def play_pack(self, pack: Pack, volume: float, limit: int | None = None) -> None:
+        """Kurze Tippsequenz aus dem Pack abspielen.
+
+        limit kuerzt die Sequenz - beim Ueberfahren mit der Maus reichen ein
+        paar Anschlaege, die volle Sequenz waere im Weg.
+        """
         self.cancel()
         sounds = pack.demo_sounds()
+        if limit is not None:
+            sounds = sounds[:limit]
         for index, sound in enumerate(sounds):
             delay = DEMO_TIMING[index] if index < len(DEMO_TIMING) else index * 95
             self._schedule(delay, sound, volume)

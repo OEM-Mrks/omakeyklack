@@ -7,7 +7,8 @@ from contextlib import contextmanager
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import GLib, Gtk, Pango  # noqa: E402
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
 
 from . import autostart  # noqa: E402
 from .config import VOLUME_MAX, VOLUME_MIN  # noqa: E402
@@ -16,6 +17,11 @@ from .engine import keyboards  # noqa: E402
 AUTO_DEVICE = "(automatisch waehlen)"
 # Wartezeit, bevor eine Schiebereglerbewegung wirklich angewendet wird.
 VOLUME_DEBOUNCE_MS = 350
+# Wartezeit, bis die Maus ueber einem Eintrag als "gemeint" gilt. Ohne die
+# feuert jedes Ueberstreichen der Liste eine Vorschau ab.
+HOVER_DELAY_MS = 220
+# Beim Ueberfahren nur ein paar Anschlaege, nicht die volle Tippsequenz.
+HOVER_PREVIEW_KEYS = 3
 
 
 class SettingsWindow(Gtk.ApplicationWindow):
@@ -23,6 +29,8 @@ class SettingsWindow(Gtk.ApplicationWindow):
         super().__init__(application=app, title="omakeyklack")
         self.app = app
         self._volume_timer: int | None = None
+        self._hover_timer: int | None = None
+        self._hovered_key: str | None = None
         # Zaehler statt Flag: refresh() ruft Helfer, die selbst wieder
         # Widgets setzen - ein Bool wuerde die Sperre zu frueh loesen.
         self._updating = 0
@@ -74,6 +82,13 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self.pack_list = Gtk.ListBox()
         self.pack_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
         self.pack_list.connect("row-selected", self._on_pack_selected)
+        # ListBoxRow hat kein eigenes Ereignisfenster, darum lauscht die
+        # Liste selbst und ordnet die Position ueber get_row_at_y zu.
+        self.pack_list.add_events(
+            Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
+        )
+        self.pack_list.connect("motion-notify-event", self._on_pack_motion)
+        self.pack_list.connect("leave-notify-event", self._on_pack_leave)
         scroller.add(self.pack_list)
         frame.add(scroller)
         return frame
@@ -102,13 +117,17 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self.device_combo.connect("changed", self._on_device_changed)
         grid.attach(self.device_combo, 1, 0, 1, 1)
 
+        self.hover_check = Gtk.CheckButton(label="Beim Darüberfahren vorhören")
+        self.hover_check.connect("toggled", self._on_hover_toggled)
+        grid.attach(self.hover_check, 0, 1, 2, 1)
+
         self.preview_check = Gtk.CheckButton(label="Beim Auswählen vorhören")
         self.preview_check.connect("toggled", self._on_preview_toggled)
-        grid.attach(self.preview_check, 0, 1, 2, 1)
+        grid.attach(self.preview_check, 0, 2, 2, 1)
 
         self.autostart_check = Gtk.CheckButton(label="Beim Anmelden starten")
         self.autostart_check.connect("toggled", self._on_autostart_toggled)
-        grid.attach(self.autostart_check, 0, 2, 2, 1)
+        grid.attach(self.autostart_check, 0, 3, 2, 1)
         return grid
 
     def _build_actions(self) -> Gtk.Widget:
@@ -132,6 +151,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
             self.volume_scale.set_value(self.app.config["volume"])
             self.enabled_switch.set_active(self.app.engine.running)
             self.preview_check.set_active(self.app.config["preview_on_select"])
+            self.hover_check.set_active(self.app.config["preview_on_hover"])
             self.autostart_check.set_active(autostart.is_enabled())
         self.update_status()
 
@@ -193,7 +213,45 @@ class SettingsWindow(Gtk.ApplicationWindow):
     def _on_pack_selected(self, _list, row) -> None:
         if self._updating or row is None:
             return
+        # Ein Klick beendet die Hover-Vorschau; gleich folgt die volle Sequenz.
+        self._cancel_hover()
         self.app.set_pack(row.pack_key)
+
+    def _on_pack_motion(self, listbox, event) -> bool:
+        row = listbox.get_row_at_y(int(event.y))
+        key = getattr(row, "pack_key", None)
+        if key == self._hovered_key:
+            return False
+        self._hovered_key = key
+        self._cancel_hover()
+        if key and self.app.config["preview_on_hover"]:
+            self._hover_timer = GLib.timeout_add(HOVER_DELAY_MS, self._fire_hover, key)
+        return False
+
+    def _on_pack_leave(self, listbox, event) -> bool:
+        # INFERIOR heisst: der Zeiger ist nur in ein Kind gewandert, die Liste
+        # wurde gar nicht verlassen.
+        if event.detail == Gdk.NotifyType.INFERIOR:
+            return False
+        # Beim Wechsel zwischen Zeilen kommen ebenfalls Verlassen-Ereignisse,
+        # obwohl der Zeiger noch ueber der Liste steht. Wuerde hier trotzdem
+        # zurueckgesetzt, spielte dieselbe Zeile gleich noch einmal vor.
+        allocation = listbox.get_allocation()
+        if 0 <= event.x < allocation.width and 0 <= event.y < allocation.height:
+            return False
+        self._hovered_key = None
+        self._cancel_hover()
+        return False
+
+    def _fire_hover(self, key: str) -> bool:
+        self._hover_timer = None
+        self.app.preview_pack(key, limit=HOVER_PREVIEW_KEYS)
+        return GLib.SOURCE_REMOVE
+
+    def _cancel_hover(self) -> None:
+        if self._hover_timer is not None:
+            GLib.source_remove(self._hover_timer)
+            self._hover_timer = None
 
     def _on_volume_changed(self, scale) -> None:
         if self._updating:
@@ -225,11 +283,21 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self.app.config["preview_on_select"] = check.get_active()
         self.app.config.save()
 
+    def _on_hover_toggled(self, check) -> None:
+        if self._updating:
+            return
+        self.app.config["preview_on_hover"] = check.get_active()
+        self.app.config.save()
+        if not check.get_active():
+            self._cancel_hover()
+
     def _on_autostart_toggled(self, check) -> None:
         if self._updating:
             return
         autostart.set_enabled(check.get_active())
 
     def _on_delete(self, *_args) -> bool:
+        self._cancel_hover()
+        self.app.preview.cancel()
         self.hide()
         return True  # Fenster nicht zerstoeren

@@ -9,8 +9,9 @@ starten. **omakeyklack** legt eine Oberfläche darüber:
 
 - **Tray-Symbol** (StatusNotifierItem) — Sounds an/aus, Soundpack und
   Lautstärke direkt aus dem Menü
-- **Soundpacks vorhören** — beim Auswählen spielt eine kurze Tippsequenz,
-  man hört das Pack also vor dem Umschalten
+- **Soundpacks vorhören** — schon beim Überfahren mit der Maus spielt eine
+  kurze Hörprobe, beim Auswählen die volle Tippsequenz. Das Pack lässt sich
+  also durchhören, ohne es zu aktivieren
 - **Lautstärke per Schieberegler**, mit sofortigem Hörbeispiel
 - **Tastatur auswählen**, falls mehrere Eingabegeräte in Frage kommen
 - **Autostart** per Häkchen
@@ -104,13 +105,16 @@ Beenden geht über *Beenden* im Tray-Menü.
   "device": "",
   "enabled": true,
   "packs_dir": "/home/du/.local/share/wayvibes/soundpacks",
-  "preview_on_select": true
+  "preview_on_select": true,
+  "preview_on_hover": true
 }
 ```
 
 - `volume` ist der lineare Faktor, den wayvibes als `-v` bekommt (0–10)
 - `device` leer lassen heißt: wayvibes sucht die Tastatur selbst aus
 - `packs_dir` darf auf ein beliebiges Verzeichnis zeigen
+- `preview_on_hover` steuert die Hörprobe beim Überfahren, `preview_on_select`
+  die beim Auswählen und beim Ändern der Lautstärke
 
 ## Wie es funktioniert
 
@@ -123,6 +127,12 @@ Die Hörproben spielt omakeyklack dagegen selbst über GStreamer ab, unabhängig
 von wayvibes. Nur so lässt sich ein Pack vorhören, ohne es vorher zu
 aktivieren.
 
+Beim Überfahren mit der Maus wartet die App 220 ms, bevor sie abspielt, und
+kürzt auf drei Anschläge. Sonst würde jedes Durchwischen der Liste ein Dutzend
+Hörproben übereinanderlegen. Ein `GtkListBoxRow` hat kein eigenes
+Ereignisfenster, deshalb lauscht die Liste selbst auf Mausbewegungen und ordnet
+die Position über `get_row_at_y` zu.
+
 Beim Beenden wird wayvibes mitgenommen; zusätzlich sorgt `PR_SET_PDEATHSIG`
 dafür, dass kein verwaister Prozess weiterklackert, wenn omakeyklack hart
 abgeschossen wird.
@@ -133,6 +143,16 @@ abgeschossen wird.
   wayvibes keine Schnittstelle dafür hat — jede Änderung startet ihn neu.
 - Die Oberfläche ist bisher nur auf Deutsch.
 - Getestet mit einer Tastatur; mehrere gleichzeitig kann wayvibes nicht.
+
+## Tests
+
+```bash
+python3 tests/test_hover.py
+```
+
+Prüft den Zustandsautomaten der Hover-Vorschau mit gestellten Widgets — dass
+eine Zeile nur einmal spielt, schnelles Durchwischen nur die Zielzeile trifft
+und wartende Hörproben beim Verlassen abgebrochen werden.
 
 ## Lizenz
 

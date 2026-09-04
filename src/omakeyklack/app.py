@@ -139,6 +139,12 @@ class Omakeyklack(Gtk.Application):
             self.engine.stop()
         self._refresh_ui()
 
+    def preview_pack(self, key: str, limit: int | None = None) -> None:
+        """Ein Pack vorhoeren, ohne es zu aktivieren."""
+        pack = packs_module.find(self.packs, key)
+        if pack is not None:
+            self.preview.play_pack(pack, float(self.config["volume"]), limit)
+
     def play_demo(self) -> None:
         pack = self.current_pack
         if pack:

@@ -23,6 +23,7 @@ DEFAULTS = {
     "enabled": True,      # Sounds beim Start aktivieren
     "packs_dir": str(DEFAULT_PACKS_DIR),
     "preview_on_select": True,
+    "preview_on_hover": True,
 }
 
 VOLUME_MIN = 0.0
