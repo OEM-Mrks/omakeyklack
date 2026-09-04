@@ -49,7 +49,7 @@ sudo usermod -aG input "$USER"   # danach neu anmelden
 ## Installation
 
 ```bash
-git clone https://github.com/<user>/omakeyklack.git
+git clone https://github.com/OEM-Mrks/omakeyklack.git
 cd omakeyklack
 ./install.sh
 ```

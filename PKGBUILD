@@ -4,7 +4,7 @@ pkgver=0.2.0
 pkgrel=1
 pkgdesc="Tray-App und Soundpack-Umschalter fuer wayvibes"
 arch=('any')
-url="https://github.com/markusoma/omakeyklack"
+url="https://github.com/OEM-Mrks/omakeyklack"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk3' 'libayatana-appindicator'
          'gst-plugins-base' 'gst-plugins-good')
