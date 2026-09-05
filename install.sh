@@ -34,6 +34,18 @@ command -v update-desktop-database >/dev/null && update-desktop-database "$APPS_
 command -v gtk-update-icon-cache >/dev/null && \
     gtk-update-icon-cache -qtf "$PREFIX/share/icons/hicolor" 2>/dev/null || true
 
+# Ohne WAV-/MP3-Dekoder bleiben die Hoerproben stumm - der Rest der App
+# laeuft aber, darum nur ein Hinweis und kein Abbruch.
+missing=()
+for element in wavparse mpg123audiodec; do
+  command -v gst-inspect-1.0 >/dev/null || break
+  gst-inspect-1.0 "$element" >/dev/null 2>&1 || missing+=("$element")
+done
+if [ ${#missing[@]} -gt 0 ]; then
+  echo "Warnung: GStreamer fehlen ${missing[*]} - Hoerproben bleiben stumm."
+  echo "         Abhilfe: sudo pacman -S gst-plugins-good"
+fi
+
 echo "Fertig. Starten mit: omakeyklack"
 case ":$PATH:" in
   *":$PREFIX/bin:"*) ;;

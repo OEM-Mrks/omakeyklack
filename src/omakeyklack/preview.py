@@ -6,6 +6,8 @@ Tastendruecken, hier geht es nur um das Vorhoeren beim Auswaehlen.
 
 from __future__ import annotations
 
+import sys
+
 import gi
 
 gi.require_version("Gst", "1.0")
@@ -14,8 +16,11 @@ from gi.repository import GLib, Gst  # noqa: E402
 from .packs import Pack, Sound  # noqa: E402
 
 # Abstaende der Demo-Anschlaege in ms - leicht ungleichmaessig, damit es
-# nach Tippen klingt und nicht nach Metronom.
-DEMO_TIMING = (0, 95, 185, 300, 390, 520, 665)
+# nach Tippen klingt und nicht nach Metronom. Die groesseren Luecken vor den
+# letzten beiden sind die Wortgrenze: k-l-a-c-k, Leertaste, Eingabe.
+DEMO_TIMING = (0, 180, 350, 540, 715, 975, 1250)
+# Abstand fuer Anschlaege jenseits von DEMO_TIMING.
+DEMO_STEP_MS = 190
 
 
 class Preview:
@@ -26,6 +31,9 @@ class Preview:
             Gst.init(None)
         self._pending: set[int] = set()
         self._active: list[Gst.Element] = []
+        # Schon gemeldete Fehlertexte - sonst schreibt jeder Anschlag der
+        # Demo-Sequenz dieselbe Zeile.
+        self._reported: set[str] = set()
 
     # -- oeffentlich ----------------------------------------------------
 
@@ -40,7 +48,10 @@ class Preview:
         if limit is not None:
             sounds = sounds[:limit]
         for index, sound in enumerate(sounds):
-            delay = DEMO_TIMING[index] if index < len(DEMO_TIMING) else index * 95
+            delay = (
+                DEMO_TIMING[index] if index < len(DEMO_TIMING)
+                else DEMO_TIMING[-1] + (index - len(DEMO_TIMING) + 1) * DEMO_STEP_MS
+            )
             self._schedule(delay, sound, volume)
 
     def play_single(self, pack: Pack, volume: float) -> None:
@@ -99,10 +110,27 @@ class Preview:
         if player is None:
             return
 
-        if message.type in (Gst.MessageType.EOS, Gst.MessageType.ERROR):
+        if message.type == Gst.MessageType.ERROR:
+            self._report(message)
+            self._teardown(player)
+        elif message.type == Gst.MessageType.EOS:
             self._teardown(player)
         elif message.type == Gst.MessageType.ASYNC_DONE and sound.is_slice:
             self._seek_slice(player, sound)
+
+    def _report(self, message: Gst.Message) -> None:
+        """Wiedergabefehler melden statt schlucken.
+
+        Der haeufigste Fall ist ein fehlendes GStreamer-Plugin: ohne
+        gst-plugins-good gibt es keinen WAV- und keinen MP3-Dekoder, und
+        die Hoerprobe bliebe sonst kommentarlos stumm.
+        """
+        error, _debug = message.parse_error()
+        text = error.message
+        if text in self._reported:
+            return
+        self._reported.add(text)
+        print(f"omakeyklack: Hoerprobe fehlgeschlagen: {text}", file=sys.stderr)
 
     def _seek_slice(self, player: Gst.Element, sound: Sound) -> None:
         """Sprite-Packs: nur den definierten Ausschnitt spielen."""

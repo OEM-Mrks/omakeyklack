@@ -9,9 +9,9 @@ starten. **omakeyklack** legt eine Oberfläche darüber:
 
 - **Tray-Symbol** (StatusNotifierItem) — Sounds an/aus, Soundpack und
   Lautstärke direkt aus dem Menü
-- **Soundpacks vorhören** — schon beim Überfahren mit der Maus spielt eine
-  kurze Hörprobe, beim Auswählen die volle Tippsequenz. Das Pack lässt sich
-  also durchhören, ohne es zu aktivieren
+- **Soundpacks vorhören** — im Fenster spielt schon beim Überfahren mit der
+  Maus eine kurze Hörprobe, beim Auswählen die volle Tippsequenz. Das Pack
+  lässt sich also durchhören, ohne es zu aktivieren
 - **Lautstärke per Schieberegler**, mit sofortigem Hörbeispiel
 - **Tastatur auswählen**, falls mehrere Eingabegeräte in Frage kommen
 - **Autostart** per Häkchen
@@ -93,6 +93,14 @@ omakeyklack --version
 
 Das Fenster zu schließen beendet die App **nicht** — sie läuft im Tray weiter.
 Beenden geht über *Beenden* im Tray-Menü.
+
+Im Tray-Menü spielt die Hörprobe beim **Auswählen** eines Packs. Ein Vorhören
+schon beim bloßen Überfahren gibt es dort nicht und kann es auch nicht geben:
+Das Tray-Menü läuft über das DBusMenu-Protokoll, das nur *opened*, *closed* und
+*clicked* kennt — eine Hover-Meldung ist darin nicht vorgesehen. Gezeichnet wird
+das Menü von der Leiste, die App bekommt den Mauszeiger nie zu sehen. Wer durch
+die Packs hören will, ohne umzuschalten, nimmt das Fenster (*Einstellungen…*);
+dort funktioniert das Überfahren.
 
 ## Konfiguration
 
