@@ -181,4 +181,7 @@ class Omakeyklack(Gtk.Application):
         if self.tray is not None:
             self.tray.refresh()
         if self.window is not None and self.window.get_visible():
-            self.window.refresh()
+            # Die Packliste selbst aendert sich hier nie - nur reload_packs()
+            # baut sie neu. Nicht neu fuellen: set_pack() laeuft auch aus dem
+            # "row-selected"-Signal heraus, siehe SettingsWindow.refresh().
+            self.window.refresh(refill_packs=False)

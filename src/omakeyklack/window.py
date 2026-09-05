@@ -143,10 +143,21 @@ class SettingsWindow(Gtk.ApplicationWindow):
 
     # -- Anzeige aktualisieren ------------------------------------------
 
-    def refresh(self) -> None:
-        """Widgets an den aktuellen Zustand angleichen."""
+    def refresh(self, refill_packs: bool = True) -> None:
+        """Widgets an den aktuellen Zustand angleichen.
+
+        refill_packs=False laesst die vorhandenen Zeilen stehen und gleicht
+        nur die Auswahl ab. Das ist Pflicht, wenn der Aufruf (ueber
+        app.set_pack) aus "row-selected" kommt: GTK arbeitet nach dem Signal
+        mit der angeklickten Zeile weiter und haelt darauf nur einen
+        geliehenen Zeiger. Ein Neuaufbau gibt sie unter GTK weg - der Zugriff
+        in gtk_list_box_update_cursor traf dann freigegebenen Speicher.
+        """
         with self._frozen():
-            self._fill_packs()
+            if refill_packs:
+                self._fill_packs()
+            else:
+                self._select_current_pack()
             self._fill_devices()
             self.volume_scale.set_value(self.app.config["volume"])
             self.enabled_switch.set_active(self.app.engine.running)
@@ -174,8 +185,6 @@ class SettingsWindow(Gtk.ApplicationWindow):
             for child in self.pack_list.get_children():
                 self.pack_list.remove(child)
 
-            current = self.app.config["pack"]
-            selected_row = None
             for pack in self.app.packs:
                 row = Gtk.ListBoxRow()
                 row.pack_key = pack.key
@@ -189,12 +198,18 @@ class SettingsWindow(Gtk.ApplicationWindow):
                 inner.pack_start(subtitle, False, False, 0)
                 row.add(inner)
                 self.pack_list.add(row)
-                if pack.key == current:
-                    selected_row = row
 
             self.pack_list.show_all()
-            if selected_row is not None:
-                self.pack_list.select_row(selected_row)
+            self._select_current_pack()
+
+    def _select_current_pack(self) -> None:
+        """Auswahl an die Konfiguration angleichen, ohne Zeilen anzufassen."""
+        with self._frozen():
+            current = self.app.config["pack"]
+            for row in self.pack_list.get_children():
+                if getattr(row, "pack_key", None) == current:
+                    self.pack_list.select_row(row)
+                    return
 
     def _fill_devices(self) -> None:
         with self._frozen():
