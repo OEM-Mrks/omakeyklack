@@ -1,6 +1,6 @@
 # Maintainer: Markus Oeffling
 pkgname=omakeyklack
-pkgver=0.2.1
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Tray-App und Soundpack-Umschalter fuer wayvibes"
 arch=('any')
