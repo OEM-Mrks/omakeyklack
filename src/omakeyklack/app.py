@@ -61,6 +61,8 @@ class Omakeyklack(Gtk.Application):
     def do_shutdown(self) -> None:
         self.preview.cancel()
         self.engine.stop()
+        if self.tray is not None:
+            self.tray.shutdown()
         Gtk.Application.do_shutdown(self)
 
     def _on_signal(self) -> bool:

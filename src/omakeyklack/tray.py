@@ -11,9 +11,9 @@ gi.require_version("AyatanaAppIndicator3", "0.1")
 from gi.repository import AyatanaAppIndicator3 as AppIndicator  # noqa: E402
 from gi.repository import Gtk  # noqa: E402
 
+from . import theme  # noqa: E402
+
 INDICATOR_ID = "omakeyklack"
-ICON_ON = "omakeyklack"
-ICON_OFF = "omakeyklack-muted"
 
 VOLUME_PRESETS = (0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0)
 
@@ -31,9 +31,14 @@ class Tray:
         self._updating = False
         self._pack_items: list[Gtk.CheckMenuItem] = []
         self._volume_items: list[tuple[Gtk.CheckMenuItem, float]] = []
+        # Helle Leiste, helles Symbol - das waere unsichtbar. Der Waechter
+        # meldet jeden Themewechsel, damit das Symbol mitgeht.
+        self.theme_mode = theme.ModeWatcher(self._on_mode_changed)
 
         self.indicator = AppIndicator.Indicator.new(
-            INDICATOR_ID, ICON_OFF, AppIndicator.IndicatorCategory.HARDWARE
+            INDICATOR_ID,
+            theme.icon_name(False, self.theme_mode.mode),
+            AppIndicator.IndicatorCategory.HARDWARE,
         )
         icon_dir = _icon_dir()
         if icon_dir is not None:
@@ -150,14 +155,20 @@ class Tray:
     def update_icon(self) -> None:
         running = self.app.engine.running
         self.indicator.set_icon_full(
-            ICON_ON if running else ICON_OFF,
+            theme.icon_name(running, self.theme_mode.mode),
             "Tastatur-Sounds an" if running else "Tastatur-Sounds aus",
         )
         self._updating = True
         self.toggle_item.set_active(running)
         self._updating = False
 
+    def shutdown(self) -> None:
+        self.theme_mode.stop()
+
     # -- Ereignisse -----------------------------------------------------
+
+    def _on_mode_changed(self, _mode: str) -> None:
+        self.update_icon()
 
     def _on_toggle(self, item) -> None:
         if self._updating:
@@ -198,6 +209,6 @@ def _icon_dir() -> Path | None:
         Path(__file__).resolve().parents[2] / "data/icons/hicolor/scalable/apps",
     ]
     for path in candidates:
-        if (path / f"{ICON_ON}.svg").is_file():
+        if (path / f"{theme.icon_name(True, theme.DARK)}.svg").is_file():
             return path
     return None

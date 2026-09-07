@@ -8,7 +8,8 @@ als Startparameter übergeben, zum Wechseln muss man den Prozess von Hand neu
 starten. **omakeyklack** legt eine Oberfläche darüber:
 
 - **Tray-Symbol** (StatusNotifierItem) — Sounds an/aus, Soundpack und
-  Lautstärke direkt aus dem Menü
+  Lautstärke direkt aus dem Menü; das Symbol nimmt die Farbe der Leiste an
+  und geht beim Themewechsel von hell auf dunkel mit
 - **Soundpacks vorhören** — im Fenster spielt schon beim Überfahren mit der
   Maus eine kurze Hörprobe, beim Auswählen die volle Tippsequenz. Das Pack
   lässt sich also durchhören, ohne es zu aktivieren
@@ -145,6 +146,58 @@ Beim Beenden wird wayvibes mitgenommen; zusätzlich sorgt `PR_SET_PDEATHSIG`
 dafür, dass kein verwaister Prozess weiterklackert, wenn omakeyklack hart
 abgeschossen wird.
 
+### Helles und dunkles Tray-Symbol
+
+Ein Tray-Symbol zeichnet nicht die App, sondern die Leiste — auf einer hellen
+Leiste verschwinden helle Striche spurlos. Dagegen hilft zweierlei.
+
+**Der Namenszusatz `-symbolic`.** Nach der Freedesktop-Konvention darf eine
+Leiste ein so benanntes Symbol auf ihre eigene Vordergrundfarbe umfärben, und
+die Omarchy-Leiste tut das auch (ihr `Tray.qml` prüft genau diese Endung).
+Damit trifft das Symbol nicht bloß „hell" oder „dunkel", sondern exakt die
+Farbe des Themes — ohne dass die App überhaupt etwas merkt.
+
+**Zwei eingebackene Fassungen** für Leisten, die nicht umfärben:
+
+| Datei | Wofür |
+|-------|-------|
+| `omakeyklack.svg` | App-Symbol für Fenster und Anwendungsmenü |
+| `omakeyklack-on-dark-symbolic.svg` | dunkle Leiste, Sounds an |
+| `omakeyklack-muted-on-dark-symbolic.svg` | dunkle Leiste, Sounds aus |
+| `omakeyklack-on-light-symbolic.svg` | helle Leiste, Sounds an |
+| `omakeyklack-muted-on-light-symbolic.svg` | helle Leiste, Sounds aus |
+
+Welche Fassung gilt, steht unter Omarchy in der `colors.toml` des aktiven
+Themes: `mode`, ersatzweise `theme_type`, eine Datei `light.mode` oder — wenn
+das Theme dazu nichts sagt — die Helligkeit von `background`. Das ist dieselbe
+Reihenfolge wie in `omarchy-theme-color`, damit App und Leiste nie zu
+verschiedenen Ergebnissen kommen.
+
+Beim Themewechsel ersetzt Omarchy den ganzen Ordner
+`~/.local/state/omarchy/current/theme`; omakeyklack beobachtet deshalb das
+Verzeichnis darüber und wechselt das Symbol, ohne dass die App neu starten
+muss. Ohne Omarchy — oder wenn die Erkennung danebenliegt — entscheidet
+`OMAKEYKLACK_ICON_MODE=light` bzw. `=dark`; ohne jede Auskunft bleibt es bei
+der dunklen Leiste.
+
+Dass beide Fassungen gedämpft anders aussehen, liegt nicht an der Farbe,
+sondern an der durchgestrichenen Schallwelle — nach dem Umfärben ist die Farbe
+in beiden Zuständen dieselbe.
+
+Das Blickfeld (`viewBox`) sitzt eng um die Zeichnung, und die Tastenkappe steht
+hochkant. Beides hat denselben Grund: Die Leiste passt das Symbol in ein
+Quadrat ein und rechnet dabei über die breitere Seite. Eine flache, breite
+Zeichnung mit Rand ringsum wird darin klein — das Symbol maß so nur 14 × 8
+Pixel, während die Nachbarn in der Leiste 12 bis 14 Pixel hoch sind. Mit engem
+Blickfeld und hochkantiger Kappe sind es 15 × 13. Aus demselben Grund fehlt der
+Kappe die Legendenlinie: Bei den zwölf Pixeln, die eine Leiste hergibt, lief
+sie mit dem Rand der Kappe zusammen.
+
+Das App-Symbol zeigt dasselbe Motiv, steht aber auf dunklem Grund. Es kann
+nämlich als einziges *nicht* mitwechseln: Die `.desktop`-Datei nennt genau
+einen Namen, und das Anwendungsmenü färbt nichts um. Der eigene Grund macht es
+unabhängig davon, welche Farbe dahinterliegt.
+
 ## Bekannte Grenzen
 
 - Die Lautstärke ist nicht stufenlos im laufenden Prozess regelbar, weil
@@ -161,6 +214,15 @@ python3 tests/test_hover.py
 Prüft den Zustandsautomaten der Hover-Vorschau mit gestellten Widgets — dass
 eine Zeile nur einmal spielt, schnelles Durchwischen nur die Zielzeile trifft
 und wartende Hörproben beim Verlassen abgebrochen werden.
+
+```bash
+python3 tests/test_theme_mode.py
+```
+
+Prüft die Hell-/Dunkel-Erkennung gegen echte Dateien in einem Wegwerf-HOME:
+die Reihenfolge der Schlüssel in `colors.toml` und dass auch der *zweite*
+Themewechsel noch gemeldet wird — da ist der Ordner, den der Wachposten beim
+Start bekommen hat, längst gelöscht.
 
 ## Lizenz
 
