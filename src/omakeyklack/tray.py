@@ -7,11 +7,26 @@ from pathlib import Path
 import gi
 
 gi.require_version("Gtk", "3.0")
-gi.require_version("AyatanaAppIndicator3", "0.1")
-from gi.repository import AyatanaAppIndicator3 as AppIndicator  # noqa: E402
 from gi.repository import Gtk  # noqa: E402
 
 from . import theme  # noqa: E402
+
+# Ohne libayatana-appindicator gibt es kein Tray-Symbol. Frueher schlug der
+# Import hier durch bis in die Konsole - der Anwender sah einen Traceback
+# statt der einen Zeile, die ihm haette helfen koennen. Jetzt wird der
+# Fehler gemerkt und die App laeuft ohne Tray weiter.
+try:
+    gi.require_version("AyatanaAppIndicator3", "0.1")
+    from gi.repository import AyatanaAppIndicator3 as AppIndicator  # noqa: E402
+
+    UNAVAILABLE = ""
+except (ImportError, ValueError):
+    AppIndicator = None
+    UNAVAILABLE = (
+        "Tray-Symbol nicht verfuegbar: libayatana-appindicator fehlt.\n"
+        "Abhilfe: sudo pacman -S libayatana-appindicator "
+        "(oder 'omakeyklack --check')."
+    )
 
 INDICATOR_ID = "omakeyklack"
 

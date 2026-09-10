@@ -1,0 +1,28 @@
+# Nach der Paketinstallation bleiben zwei Dinge uebrig, die kein Paket
+# erledigen kann: die Gruppenmitgliedschaft und die Soundpacks.
+
+post_install() {
+  cat <<'NOTE'
+
+omakeyklack ist installiert. Zwei Schritte fehlen noch:
+
+  1. Leserecht auf die Tastatur (verlangt wayvibes):
+       sudo usermod -aG input "$USER"
+     Danach einmal ab- und wieder anmelden.
+
+  2. Soundpacks besorgen - ohne die gibt es nichts auszuwaehlen.
+
+Beides erledigt auch:
+       omakeyklack --check --fix
+
+NOTE
+}
+
+post_upgrade() {
+  omakeyklack-doctor >/dev/null 2>&1 || cat <<'NOTE'
+
+Hinweis: es fehlen noch Voraussetzungen. Nachsehen mit:
+       omakeyklack --check
+
+NOTE
+}

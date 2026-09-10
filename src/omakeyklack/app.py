@@ -10,7 +10,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, packs as packs_module  # noqa: E402
+from . import APP_ID, packs as packs_module, tray as tray_module  # noqa: E402
 from .config import Config, clamp_volume  # noqa: E402
 from .engine import Engine, EngineError  # noqa: E402
 from .preview import Preview  # noqa: E402
@@ -47,14 +47,33 @@ class Omakeyklack(Gtk.Application):
         for sig in (signal.SIGINT, signal.SIGTERM):
             GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, self._on_signal)
         self.reload_packs(refresh_ui=False)
-        self.tray = Tray(self)
+        self._build_tray()
         if self.config["enabled"]:
             self._start_engine()
-        self.tray.refresh()
+        if self.tray is not None:
+            self.tray.refresh()
+
+    def _build_tray(self) -> None:
+        """Tray aufbauen - und ohne Tray weiterlaufen, statt zu sterben.
+
+        Fehlt libayatana-appindicator, war das frueher ein Traceback beim
+        Start. Das Fenster und wayvibes funktionieren aber auch ohne
+        Tray-Symbol, darum wird der Ausfall nur gemeldet.
+        """
+        if tray_module.UNAVAILABLE:
+            self.last_error = tray_module.UNAVAILABLE
+            print(f"omakeyklack: {tray_module.UNAVAILABLE}", file=sys.stderr)
+            return
+        try:
+            self.tray = Tray(self)
+        except Exception as exc:  # noqa: BLE001 - Tray ist nie den Start wert
+            self.last_error = f"Tray-Symbol liess sich nicht anlegen: {exc}"
+            print(f"omakeyklack: {self.last_error}", file=sys.stderr)
 
     def do_command_line(self, command_line) -> int:
         options = command_line.get_options_dict().end().unpack()
-        if not options.get("tray"):
+        # Ohne Tray waere "--tray" eine App ganz ohne Bedienoberflaeche.
+        if not options.get("tray") or self.tray is None:
             self.show_window()
         return 0
 

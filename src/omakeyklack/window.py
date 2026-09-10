@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import grp
+import os
 from contextlib import contextmanager
 
 import gi
@@ -22,6 +24,24 @@ VOLUME_DEBOUNCE_MS = 350
 HOVER_DELAY_MS = 220
 # Beim Ueberfahren nur ein paar Anschlaege, nicht die volle Tippsequenz.
 HOVER_PREVIEW_KEYS = 3
+
+
+def _may_read_input() -> bool:
+    """Darf der Benutzer die Eingabegeraete lesen?
+
+    wayvibes horcht per evdev an /dev/input; ohne die Gruppe 'input'
+    startet es zwar, hoert aber nie eine Taste. Das ist die Huerde, die
+    beim Einrichten am haeufigsten uebersehen wird - und von aussen sieht
+    sie aus, als taete die App einfach nichts.
+    """
+    try:
+        gid = grp.getgrnam("input").gr_gid
+    except KeyError:
+        return True  # keine Gruppe 'input' -> hier nichts zu melden
+    # Bewusst die Gruppen der laufenden Sitzung, nicht /etc/group: nach
+    # 'usermod -aG' steht der Benutzer zwar drin, darf aber erst nach dem
+    # naechsten Anmelden wirklich lesen.
+    return gid in os.getgroups() or os.geteuid() == 0
 
 
 class SettingsWindow(Gtk.ApplicationWindow):
@@ -167,15 +187,26 @@ class SettingsWindow(Gtk.ApplicationWindow):
         self.update_status()
 
     def update_status(self) -> None:
+        """Statuszeile setzen - fehlende Voraussetzungen zuerst.
+
+        Wer die App zum ersten Mal oeffnet, soll hier lesen koennen, was
+        noch fehlt, statt vor einer leeren Liste zu sitzen. Deshalb nennt
+        jede Meldung auch gleich den Befehl, der weiterhilft.
+        """
         pack = self.app.current_pack
         if not self.app.engine.available:
-            text = "wayvibes ist nicht installiert - Sounds können nicht abgespielt werden."
+            text = ("wayvibes ist nicht installiert - ohne das bleibt die Tastatur "
+                    "stumm. Abhilfe im Terminal: omakeyklack --check --fix")
+        elif not self.app.packs:
+            text = (f"Keine Soundpacks in {self.app.config.packs_dir}. "
+                    "Abhilfe im Terminal: omakeyklack --check --fix")
+        elif not _may_read_input():
+            text = ("Der Benutzer darf die Tastatur nicht lesen (Gruppe 'input'). "
+                    "Abhilfe im Terminal: omakeyklack --check --fix")
         elif self.app.engine.running and pack:
             text = f"Aktiv: {pack.name}"
-        elif pack:
-            text = "Sounds sind aus."
         else:
-            text = f"Keine Soundpacks in {self.app.config.packs_dir} gefunden."
+            text = "Sounds sind aus."
         self.status.set_text(text)
         with self._frozen():
             self.enabled_switch.set_active(self.app.engine.running)

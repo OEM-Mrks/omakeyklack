@@ -2,7 +2,7 @@
 
 Tray-App für mechanische Tastatur-Sounds unter Wayland.
 
-[wayvibes](https://github.com/SameeBhaii/wayvibes) spielt beim Tippen Sounds ab,
+[wayvibes](https://github.com/sahaj-b/wayvibes) spielt beim Tippen Sounds ab,
 ist aber ein reines Kommandozeilen-Werkzeug: Soundpack und Lautstärke werden
 als Startparameter übergeben, zum Wechseln muss man den Prozess von Hand neu
 starten. **omakeyklack** legt eine Oberfläche darüber:
@@ -25,28 +25,6 @@ Quickshell, GNOME mit AppIndicator-Erweiterung, KDE …).
 > set volume, toggle typing sounds. The user interface is currently German only;
 > pull requests for translations are welcome.
 
-## Voraussetzungen
-
-| Was | Paket unter Arch |
-|-----|------------------|
-| wayvibes | `wayvibes-git` (AUR) |
-| Python 3.10+ mit PyGObject | `python-gobject` |
-| GTK 3 | `gtk3` |
-| Tray-Anbindung | `libayatana-appindicator` |
-| Wiedergabe der Hörproben | `gst-plugins-base`, `gst-plugins-good` |
-
-```bash
-sudo pacman -S python-gobject gtk3 libayatana-appindicator \
-    gst-plugins-base gst-plugins-good
-```
-
-Der eigene Benutzer muss die Eingabegeräte lesen dürfen — das verlangt schon
-wayvibes selbst:
-
-```bash
-sudo usermod -aG input "$USER"   # danach neu anmelden
-```
-
 ## Installation
 
 ```bash
@@ -55,13 +33,84 @@ cd omakeyklack
 ./install.sh
 ```
 
-Installiert nach `~/.local` (kein root nötig). Systemweit geht auch:
+`install.sh` kopiert die Dateien nach `~/.local` (kein root nötig) und prüft
+danach der Reihe nach alles, was zum Laufen gebraucht wird. Was fehlt, wird
+auf Nachfrage nachinstalliert: die Arch-Pakete, **wayvibes** aus dem AUR, die
+Gruppenmitgliedschaft und, wenn noch keins da ist, ein Satz Soundpacks.
+
+Ohne Rückfragen geht es mit `./install.sh --yes`, ohne jede Prüfung mit
+`./install.sh --no-deps`. Systemweit:
 
 ```bash
 PREFIX=/usr/local sudo ./install.sh
 ```
 
 Deinstallieren mit `./uninstall.sh`.
+
+### Als Paket
+
+```bash
+yay -S --needed wayvibes-git && makepkg -si
+```
+
+Das PKGBUILD zieht **wayvibes** als echte Abhängigkeit mit — ohne die Engine
+spielt omakeyklack keinen einzigen Ton. Die Gruppe `input` und die Soundpacks
+bleiben auch hier übrig; `omakeyklack --check --fix` erledigt beides.
+
+### Nachträglich prüfen
+
+```bash
+omakeyklack --check         # nur nachsehen
+omakeyklack --check --fix   # fehlendes nachinstallieren
+```
+
+Dasselbe Skript, das `install.sh` benutzt. Es meldet für jeden Punkt einzeln,
+ob er erfüllt ist, und nennt den Befehl, der weiterhilft.
+
+## Voraussetzungen
+
+Das Übliche erledigt `./install.sh`. Von Hand geht es so:
+
+| Was | Paket unter Arch |
+|-----|------------------|
+| wayvibes (spielt die Töne) | `wayvibes-git` (AUR) |
+| Python 3.10+ mit PyGObject | `python`, `python-gobject` |
+| GTK 3 | `gtk3` |
+| Tray-Anbindung | `libayatana-appindicator` |
+| Wiedergabe der Hörproben | `gstreamer`, `gst-plugins-base`, `gst-plugins-good` |
+
+```bash
+sudo pacman -S --needed python python-gobject gtk3 libayatana-appindicator \
+    gstreamer gst-plugins-base gst-plugins-good
+yay -S wayvibes-git
+```
+
+Dazu kommen zwei Dinge, die kein Paket erledigen kann:
+
+**Leserecht auf die Tastatur.** wayvibes lauscht per evdev an `/dev/input`;
+ohne die Gruppe startet es zwar, hört aber nie eine Taste — von außen sieht
+das aus, als täte die App einfach nichts.
+
+```bash
+sudo usermod -aG input "$USER"   # danach neu anmelden
+```
+
+**Soundpacks.** wayvibes bringt keine mit, also ist die Liste beim ersten
+Start leer. Woher sie kommen, steht im nächsten Abschnitt.
+
+## Wenn etwas nicht geht
+
+| Symptom | Ursache | Abhilfe |
+|---------|---------|---------|
+| `omakeyklack: Kommando nicht gefunden` | `~/.local/bin` nicht im `PATH` | `export PATH="$HOME/.local/bin:$PATH"` in `~/.bashrc` |
+| Fenster geht auf, Liste ist leer | keine Soundpacks | `omakeyklack --check --fix` |
+| „wayvibes ist nicht installiert" | AUR-Paket fehlt | `yay -S wayvibes-git` |
+| Alles sieht richtig aus, aber es klackt nicht | Gruppe `input` fehlt oder die Sitzung kennt sie noch nicht | `sudo usermod -aG input "$USER"`, dann neu anmelden |
+| Kein Tray-Symbol, Meldung auf der Konsole | `libayatana-appindicator` fehlt | `sudo pacman -S libayatana-appindicator` |
+| Hörproben bleiben stumm, Sounds gehen | GStreamer-Dekoder fehlen | `sudo pacman -S gst-plugins-good` |
+| Leiste zeigt gar kein Tray | Leiste kann kein StatusNotifierItem | Waybar/Quickshell mit Tray-Modul, GNOME braucht die AppIndicator-Erweiterung |
+
+Im Zweifel sagt `omakeyklack --check`, welche Zeile davon zutrifft.
 
 ## Soundpacks
 
@@ -81,6 +130,9 @@ Packs gibt es zum Beispiel bei
 [mechvibes.com](https://mechvibes.com/sound-packs/). Entpacken, in den Ordner
 oben legen, im Fenster auf **Packs neu einlesen** klicken.
 
+Wer nicht suchen will: das wayvibes-Projekt liefert 22 fertige Packs mit, und
+`omakeyklack --check --fix` bietet an, sie zu holen (rund 58 MB Download).
+
 ## Bedienung
 
 Ohne Argumente öffnet sich das Einstellungsfenster; das Tray-Symbol läuft
@@ -89,6 +141,7 @@ parallel weiter:
 ```bash
 omakeyklack          # Fenster + Tray
 omakeyklack --tray   # nur Tray (so startet auch der Autostart)
+omakeyklack --check  # Voraussetzungen prüfen (--fix installiert nach)
 omakeyklack --version
 ```
 
@@ -208,6 +261,11 @@ unabhängig davon, welche Farbe dahinterliegt.
 ## Tests
 
 ```bash
+for t in tests/test_*.py; do python3 "$t"; done
+bash tests/test_doctor.sh
+```
+
+```bash
 python3 tests/test_hover.py
 ```
 
@@ -223,6 +281,21 @@ Prüft die Hell-/Dunkel-Erkennung gegen echte Dateien in einem Wegwerf-HOME:
 die Reihenfolge der Schlüssel in `colors.toml` und dass auch der *zweite*
 Themewechsel noch gemeldet wird — da ist der Ordner, den der Wachposten beim
 Start bekommen hat, längst gelöscht.
+
+```bash
+python3 tests/test_no_tray.py
+```
+
+Stellt ein System ohne `libayatana-appindicator`: Der Import muss durchgehen
+und die App ohne Tray weiterlaufen, statt mit einem Traceback zu sterben.
+
+```bash
+bash tests/test_doctor.sh
+```
+
+Prüft `omakeyklack-doctor` gegen gestellte Umgebungen — leerer Packs-Ordner,
+fehlendes wayvibes — und dass `--fix` ohne Terminal nichts ungefragt
+herunterlädt.
 
 ## Lizenz
 
