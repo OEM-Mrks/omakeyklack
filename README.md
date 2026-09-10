@@ -15,7 +15,7 @@ starten. **omakeyklack** legt eine Oberfläche darüber:
   lässt sich also durchhören, ohne es zu aktivieren
 - **Lautstärke per Schieberegler**, mit sofortigem Hörbeispiel
 - **Tastatur auswählen**, falls mehrere Eingabegeräte in Frage kommen
-- **Autostart** per Häkchen
+- **Autostart** — nach der Einrichtung von selbst aktiv, abschaltbar per Häkchen
 
 Getestet unter Hyprland/[Omarchy](https://omarchy.org/), funktioniert aber mit
 jedem Wayland-Desktop, dessen Leiste StatusNotifierItem beherrscht (Waybar,
@@ -168,7 +168,8 @@ dort funktioniert das Überfahren.
   "enabled": true,
   "packs_dir": "/home/du/.local/share/wayvibes/soundpacks",
   "preview_on_select": true,
-  "preview_on_hover": true
+  "preview_on_hover": true,
+  "autostart_initialized": true
 }
 ```
 
@@ -177,6 +178,22 @@ dort funktioniert das Überfahren.
 - `packs_dir` darf auf ein beliebiges Verzeichnis zeigen
 - `preview_on_hover` steuert die Hörprobe beim Überfahren, `preview_on_select`
   die beim Auswählen und beim Ändern der Lautstärke
+- `autostart_initialized` ist nur ein Merker: Der Autostart wurde schon einmal
+  vorbelegt. Er sagt nichts darüber aus, ob der Autostart gerade an ist — das
+  steht in `~/.config/autostart/omakeyklack.desktop`
+
+## Autostart
+
+Beim allerersten Start legt omakeyklack `~/.config/autostart/omakeyklack.desktop`
+an und startet danach mit `--tray` von selbst mit. Eine Tray-App, die nach dem
+nächsten Anmelden verschwunden ist, wirkt sonst wie eine, die nicht
+funktioniert.
+
+Genau einmal allerdings. Wer das Häkchen *Beim Anmelden starten* wegnimmt,
+findet es beim nächsten Start nicht wieder gesetzt vor — der Merker
+`autostart_initialized` in der Konfiguration verhindert das und übersteht auch
+eine Neuinstallation. Ebenso wird bei einem Upgrade nichts angelegt: Wer schon
+eine Konfiguration hat, hat seine Wahl getroffen.
 
 ## Wie es funktioniert
 
@@ -288,6 +305,14 @@ python3 tests/test_no_tray.py
 
 Stellt ein System ohne `libayatana-appindicator`: Der Import muss durchgehen
 und die App ohne Tray weiterlaufen, statt mit einem Traceback zu sterben.
+
+```bash
+python3 tests/test_autostart_default.py
+```
+
+Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
+der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
+Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
 
 ```bash
 bash tests/test_doctor.sh

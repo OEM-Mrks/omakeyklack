@@ -10,7 +10,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gio, GLib, Gtk  # noqa: E402
 
-from . import APP_ID, packs as packs_module, tray as tray_module  # noqa: E402
+from . import APP_ID, autostart, packs as packs_module, tray as tray_module  # noqa: E402
 from .config import Config, clamp_volume  # noqa: E402
 from .engine import Engine, EngineError  # noqa: E402
 from .preview import Preview  # noqa: E402
@@ -47,11 +47,35 @@ class Omakeyklack(Gtk.Application):
         for sig in (signal.SIGINT, signal.SIGTERM):
             GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, self._on_signal)
         self.reload_packs(refresh_ui=False)
+        self._apply_autostart_default()
         self._build_tray()
         if self.config["enabled"]:
             self._start_engine()
         if self.tray is not None:
             self.tray.refresh()
+
+    def _apply_autostart_default(self) -> None:
+        """Beim allerersten Start den Autostart anlegen.
+
+        Eine Tray-App, die nach dem naechsten Anmelden weg ist, wirkt wie
+        eine, die nicht funktioniert - darum ist der Autostart die
+        sinnvollere Vorbelegung. Genau einmal allerdings: wer ihn danach
+        abschaltet, soll ihn nicht beim naechsten Start wiederfinden. Der
+        Merker steht in der Konfiguration, ueberlebt also auch eine
+        Neuinstallation.
+        """
+        if self.config["autostart_initialized"]:
+            return
+        self.config["autostart_initialized"] = True
+        # Nur bei einer wirklich frischen Einrichtung eingreifen. Wer schon
+        # eine Konfiguration hat, hat seine Wahl getroffen - auch die, den
+        # Autostart nicht zu wollen.
+        if self.config.first_run and not autostart.is_enabled():
+            try:
+                autostart.set_enabled(True)
+            except OSError as exc:
+                print(f"omakeyklack: Autostart nicht angelegt: {exc}", file=sys.stderr)
+        self.config.save()
 
     def _build_tray(self) -> None:
         """Tray aufbauen - und ohne Tray weiterlaufen, statt zu sterben.

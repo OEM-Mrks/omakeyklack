@@ -24,6 +24,9 @@ DEFAULTS = {
     "packs_dir": str(DEFAULT_PACKS_DIR),
     "preview_on_select": True,
     "preview_on_hover": True,
+    # Einmaliger Merker: Der Autostart wurde schon einmal vorbelegt. Ohne
+    # den wuerde jeder Start ein abgeschaltetes Autostart wieder anwerfen.
+    "autostart_initialized": False,
 }
 
 VOLUME_MIN = 0.0
@@ -36,6 +39,11 @@ class Config(dict):
     def __init__(self, path: Path = CONFIG_FILE):
         super().__init__(DEFAULTS)
         self.path = path
+        # Vor dem Laden merken: nur ohne Datei ist es wirklich der erste
+        # Start. Wer schon eine hat, hat seine Einstellungen selbst getroffen
+        # und soll sie nicht durch eine neue Vorbelegung ueberschrieben
+        # bekommen.
+        self.first_run = not path.exists()
         self.load()
 
     def load(self) -> None:
