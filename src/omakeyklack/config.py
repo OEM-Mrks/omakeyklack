@@ -16,9 +16,19 @@ DEFAULT_PACKS_DIR = Path(
     os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")
 ) / "wayvibes" / "soundpacks"
 
+# Das Pack, mit dem eine frische Installation startet. nk-cream liegt dem
+# wayvibes-Projekt bei, wird also mitgeliefert, wenn der Doctor die Packs
+# holt - und klingt gedaempft genug, um niemanden zu erschrecken, der die
+# App zum ersten Mal oeffnet. Fehlt es, nimmt reload_packs das erste
+# vorhandene Pack.
+DEFAULT_PACK = "nk-cream"
+# Bei 2.0 war der erste Anschlag lauter als noetig. 1.0 ist wayvibes'
+# eigener Normalwert und laesst sich nach oben wie unten nachregeln.
+DEFAULT_VOLUME = 1.0
+
 DEFAULTS = {
-    "pack": "",           # Verzeichnisname des Soundpacks, "" = erstes gefundenes
-    "volume": 2.0,        # wayvibes -v, linearer Faktor 0.0 - 10.0
+    "pack": DEFAULT_PACK,  # Verzeichnisname; unbekannt -> erstes gefundenes
+    "volume": DEFAULT_VOLUME,  # wayvibes -v, linearer Faktor 0.0 - 10.0
     "device": "",         # exakter Eingabegeraet-Name, "" = wayvibes fragt selbst
     "enabled": True,      # Sounds beim Start aktivieren
     "packs_dir": str(DEFAULT_PACKS_DIR),

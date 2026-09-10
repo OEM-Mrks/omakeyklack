@@ -191,7 +191,7 @@ dort funktioniert das Überfahren.
 ```json
 {
   "pack": "nk-cream",
-  "volume": 2.0,
+  "volume": 1.0,
   "device": "",
   "enabled": true,
   "packs_dir": "/home/du/.local/share/wayvibes/soundpacks",
@@ -201,7 +201,11 @@ dort funktioniert das Überfahren.
 }
 ```
 
-- `volume` ist der lineare Faktor, den wayvibes als `-v` bekommt (0–10)
+- `volume` ist der lineare Faktor, den wayvibes als `-v` bekommt (0–10);
+  vorbelegt ist 1.0, wayvibes' eigener Normalwert
+- `pack` ist vorbelegt mit `nk-cream` — das liegt dem wayvibes-Projekt bei
+  und klingt gedämpft genug für den ersten Start. Wer es nicht hat, bekommt
+  das erste vorhandene Pack
 - `device` leer lassen heißt: wayvibes sucht die Tastatur selbst aus
 - `packs_dir` darf auf ein beliebiges Verzeichnis zeigen
 - `preview_on_hover` steuert die Hörprobe beim Überfahren, `preview_on_select`
@@ -341,6 +345,14 @@ python3 tests/test_autostart_default.py
 Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
 der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
 Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
+
+```bash
+python3 tests/test_defaults.py
+```
+
+Prüft die Vorbelegung einer frischen Installation — nk-cream bei Lautstärke
+1.0 —, dass eine bestehende Konfiguration davon unberührt bleibt und dass ohne
+nk-cream das erste vorhandene Pack einspringt.
 
 ```bash
 bash tests/test_doctor.sh
