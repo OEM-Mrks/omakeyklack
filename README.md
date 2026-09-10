@@ -350,6 +350,28 @@ Prüft `omakeyklack-doctor` gegen gestellte Umgebungen — leerer Packs-Ordner,
 fehlendes wayvibes — und dass `--fix` ohne Terminal nichts ungefragt
 herunterlädt.
 
+### Gegen ein nacktes Arch
+
+```bash
+tests/fresh-install.sh          # aktueller Arbeitsstand
+tests/fresh-install.sh --curl   # der veröffentlichte Einzeiler
+```
+
+Baut aus `tests/Dockerfile` ein Arch, das nur `base-devel`, `git`, `sudo`,
+`curl` und `tar` kennt — kein GTK, kein GStreamer, kein AUR-Helfer, keine
+Soundpacks, keine Gruppe `input` — und lässt die Einrichtung darauf los.
+Geprüft wird nicht nur, dass sie durchläuft, sondern jeder einzelne Schritt:
+Pakete erkannt und nachinstalliert, wayvibes aus dem Quelltext gebaut, Gruppe
+eingetragen, Soundpacks geholt, zweiter Lauf grün, Deinstallation rückstandslos.
+
+Braucht Docker und Netz und läuft ein paar Minuten, ist deshalb nicht Teil des
+normalen Testlaufs. Er hat sich trotzdem gelohnt: Zwei Fehler, die auf der
+Entwicklermaschine unsichtbar waren, sind erst hier aufgefallen — ein
+ungesetztes `$USER`, an dem der Doctor mitten in der Prüfung abbrach, und die
+Rückfragen, die hinter `curl | bash` ins Leere liefen. Beides Fehler, die
+ausgerechnet den Fall treffen, für den das Ganze gedacht ist: die frische
+Maschine.
+
 ## Lizenz
 
 MIT — siehe [LICENSE](LICENSE).
