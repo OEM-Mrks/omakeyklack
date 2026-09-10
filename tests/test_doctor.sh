@@ -49,6 +49,16 @@ else
   ok "--fix ohne Terminal hat nichts geschrieben"
 fi
 
+# Der Griff nach /dev/tty darf nicht zu hoeren sein, wenn es keins gibt.
+# Eine Fehlermeldung an dieser Stelle sieht nach Defekt aus, obwohl der
+# Rueckfall genau so gedacht ist.
+noise="$(env OMAKEYKLACK_PACKS_DIR="$WORK/leer" "$DOCTOR" --fix < /dev/null 2>&1)"
+if grep -q '/dev/tty' <<< "$noise"; then
+  fail "erfolgloser Griff nach /dev/tty meldet sich lautstark"
+else
+  ok "kein Laerm, wenn /dev/tty fehlt"
+fi
+
 # -- 3. Fehlendes wayvibes wird gemeldet -------------------------------
 
 # PATH so bauen, dass alles da ist ausser wayvibes.

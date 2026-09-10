@@ -25,7 +25,11 @@ say() { printf '%s\n' "$1"; }
 # Hinter "curl | bash" haengt stdin am Skripttext selbst. Wer das nicht
 # geradezieht, bekommt auf jede Rueckfrage stillschweigend ein "nein" -
 # und eine Installation, die nichts installiert.
-if [ ! -t 0 ] && : < /dev/tty 2>/dev/null; then
+# Die Umlenkung von stderr muss VOR der von stdin stehen: Bash arbeitet sie
+# von links nach rechts ab, sonst meldet sich das fehlgeschlagene Oeffnen,
+# bevor 2>/dev/null ueberhaupt gilt - und jede Installation ohne Terminal
+# begaenne mit einer Fehlermeldung, die nach Defekt aussieht.
+if [ ! -t 0 ] && : 2>/dev/null < /dev/tty; then
   exec < /dev/tty
 fi
 

@@ -71,7 +71,7 @@ confirm() {
   local answer
   if [ -t 0 ]; then
     read -r -p "    $1 [j/N] " answer
-  elif : < /dev/tty 2>/dev/null; then
+  elif : 2>/dev/null < /dev/tty; then   # stderr zuerst, sonst laermt der Fehlschlag
     # Bei "curl ... | bash" haengt stdin am Skripttext selbst - von dort
     # kommt nie eine Antwort. Das Terminal ist aber noch da, also direkt
     # dorthin fragen. Ohne das wuerde der Einzeiler jede Rueckfrage
