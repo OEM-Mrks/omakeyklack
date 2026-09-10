@@ -32,9 +32,9 @@ curl -fsSL https://raw.githubusercontent.com/OEM-Mrks/omakeyklack/main/boot.sh |
 ```
 
 Holt die neueste Fassung, entpackt sie in ein Wegwerf-Verzeichnis und ruft
-`install.sh` auf. Braucht nur `curl` und `tar` — kein `git`. Die Rückfragen
-laufen dabei über `/dev/tty`, gehen also nicht verloren, nur weil das Skript
-durch eine Pipe kommt.
+`install.sh` auf. Braucht nur `curl` und `tar` — kein `git`. Das Terminal wird
+dabei an `install.sh` durchgereicht, die Rückfragen gehen also nicht verloren,
+nur weil das Skript durch eine Pipe kommt.
 
 `... | bash -s -- --yes` beantwortet alles mit ja,
 `OMAKEYKLACK_VERSION=v0.4.2 ... | bash` nimmt eine bestimmte Fassung.
@@ -361,6 +361,17 @@ python3 tests/test_autostart_default.py
 Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
 der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
 Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
+
+```bash
+bash tests/test_boot_pipe.sh
+```
+
+Leitet `boot.sh` durch eine Pipe in `bash` — einmal mit echtem Terminal (über
+`script`), einmal ohne. Bei `curl | bash` liest bash *das Skript selbst* von
+`stdin`; wer diesen Deskriptor ersetzt, nimmt bash den Rest der Datei weg, und
+der Anwender sieht überhaupt nichts. Sichtbar ist das ausschließlich mit
+Terminal — ohne eines läuft dieselbe Datei tadellos durch. Deshalb braucht es
+hier ein Pseudo-Terminal.
 
 ```bash
 bash tests/test_uninstall_stops_app.sh

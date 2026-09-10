@@ -22,16 +22,17 @@ fi
 die() { printf '%sAbbruch:%s %s\n' "$RED" "$OFF" "$1" >&2; exit 1; }
 say() { printf '%s\n' "$1"; }
 
-# Hinter "curl | bash" haengt stdin am Skripttext selbst. Wer das nicht
-# geradezieht, bekommt auf jede Rueckfrage stillschweigend ein "nein" -
-# und eine Installation, die nichts installiert.
-# Die Umlenkung von stderr muss VOR der von stdin stehen: Bash arbeitet sie
-# von links nach rechts ab, sonst meldet sich das fehlgeschlagene Oeffnen,
-# bevor 2>/dev/null ueberhaupt gilt - und jede Installation ohne Terminal
-# begaenne mit einer Fehlermeldung, die nach Defekt aussieht.
-if [ ! -t 0 ] && : 2>/dev/null < /dev/tty; then
-  exec < /dev/tty
-fi
+# Hinter "curl | bash" haengt stdin am Skripttext selbst: bash liest von
+# dort die naechsten Zeilen, die es noch ausfuehren soll.
+#
+# Genau darum darf hier NIEMALS "exec < /dev/tty" stehen. Das ersetzt den
+# Deskriptor, aus dem bash das Skript liest - der Rest der Datei kommt dann
+# vom Terminal, also nie. Sichtbar ist das ausschliesslich mit echtem
+# Terminal; ohne eines wird die Zeile uebersprungen und alles scheint zu
+# gehen. Siehe tests/test_boot_pipe.sh.
+#
+# Das Terminal bekommt stattdessen nur das Kind, weiter unten beim Aufruf
+# von install.sh. Der eigene stdin bleibt, wo er ist.
 
 command -v curl >/dev/null || die "curl fehlt."
 command -v tar >/dev/null || die "tar fehlt."
@@ -79,7 +80,19 @@ cd "$SOURCE"
 # "set -e" wuerde hier abbrechen, bevor der Rueckgabewert ausgewertet ist -
 # und die Abschlusszeilen kaemen nie.
 status=0
-./install.sh "$@" || status=$?
+if [ -t 0 ]; then
+  # Regulaerer Aufruf: stdin ist schon das Terminal.
+  ./install.sh "$@" || status=$?
+elif : 2>/dev/null < /dev/tty; then
+  # Hinter der Pipe: dem Kind das Terminal geben, damit Rueckfragen
+  # ankommen. Nur dem Kind - der eigene stdin traegt noch den Skripttext.
+  ./install.sh "$@" < /dev/tty || status=$?
+else
+  # Weder Terminal noch Rueckfragemoeglichkeit. Nicht den Skripttext
+  # weiterreichen: install.sh wuerde sonst die eigenen naechsten Zeilen
+  # lesen.
+  ./install.sh "$@" < /dev/null || status=$?
+fi
 
 say ""
 if [ "$status" -eq 0 ]; then
