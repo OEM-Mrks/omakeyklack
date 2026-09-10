@@ -24,8 +24,16 @@ AUR_DEPS=(wayvibes-git)
 SOUNDPACK_TARBALL="https://codeload.github.com/sahaj-b/wayvibes/tar.gz/refs/heads/main"
 SOUNDPACK_SIZE="rund 58 MB Download, 110 MB auf der Platte"
 
-PACKS_DIR="${OMAKEYKLACK_PACKS_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/wayvibes/soundpacks}"
-PREFIX="${PREFIX:-$HOME/.local}"
+# Nicht auf $USER und $HOME verlassen: in einer Container- oder
+# Dienst-Umgebung sind die schlicht nicht gesetzt, und wegen "set -u" hat
+# das Skript dann mitten in der Pruefung aufgehoert - ausgerechnet das,
+# was es verhindern soll. id und getent wissen es immer.
+USER_NAME="${USER:-$(id -un)}"
+HOME_DIR="${HOME:-$(getent passwd "$USER_NAME" | cut -d: -f6)}"
+HOME_DIR="${HOME_DIR:-/root}"
+
+PACKS_DIR="${OMAKEYKLACK_PACKS_DIR:-${XDG_DATA_HOME:-$HOME_DIR/.local/share}/wayvibes/soundpacks}"
+PREFIX="${PREFIX:-$HOME_DIR/.local}"
 
 FIX=0
 ASSUME_YES=0
@@ -222,7 +230,7 @@ check_input_group() {
 
   # usermod wirkt erst nach dem Neuanmelden - die aktuelle Sitzung sieht
   # die Gruppe noch nicht. Darum getrennt nachsehen.
-  if getent group input 2>/dev/null | grep -qw "$USER"; then
+  if getent group input 2>/dev/null | grep -qw "$USER_NAME"; then
     warn "in 'input' eingetragen, aber die laufende Sitzung kennt das noch nicht"
     hint "Einmal ab- und wieder anmelden."
     PENDING_RELOGIN=1
@@ -230,11 +238,11 @@ check_input_group() {
   fi
 
   bad "Benutzer ist nicht in der Gruppe 'input' - wayvibes hoert nichts"
-  hint "sudo usermod -aG input $USER   (danach neu anmelden)"
+  hint "sudo usermod -aG input $USER_NAME   (danach neu anmelden)"
   [ "$FIX" = 1 ] || return
 
   if confirm "Jetzt eintragen?"; then
-    if as_root usermod -aG input "$USER"; then
+    if as_root usermod -aG input "$USER_NAME"; then
       PROBLEMS=$((PROBLEMS - 1))
       PENDING_RELOGIN=1
       ok "eingetragen - wirkt nach dem naechsten Anmelden"

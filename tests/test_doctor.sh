@@ -65,7 +65,22 @@ mkdir -p "$WORK/voll/pack-a" "$WORK/voll/pack-b"
 check "vorhandene Packs werden gezaehlt" 0 "2 Pack" \
   env OMAKEYKLACK_PACKS_DIR="$WORK/voll" "$DOCTOR"
 
-# -- 5. --help bricht nichts an ----------------------------------------
+# -- 5. Nackte Umgebung: der Bericht muss vollstaendig bleiben ---------
+
+# Ohne $USER und $HOME hatte "set -u" das Skript mitten in der Pruefung
+# abgebrochen - Soundpacks und PATH kamen gar nicht mehr dran. Ein Doctor,
+# der nur die halbe Wahrheit sagt, ist schlimmer als keiner.
+bare_output="$(env -i PATH="$PATH" OMAKEYKLACK_PACKS_DIR="$WORK/leer" \
+    bash "$DOCTOR" 2>&1)"
+if grep -q 'unbound variable' <<< "$bare_output"; then
+  fail "nackte Umgebung: Skript stolpert ueber eine ungesetzte Variable"
+elif ! grep -q 'Soundpacks' <<< "$bare_output"; then
+  fail "nackte Umgebung: Bericht bricht vor den Soundpacks ab"
+else
+  ok "nackte Umgebung ohne \$USER und \$HOME wird durchgeprueft"
+fi
+
+# -- 6. --help bricht nichts an ----------------------------------------
 
 check "--help beschreibt den Aufruf" 0 "nur pruefen" "$DOCTOR" --help
 
