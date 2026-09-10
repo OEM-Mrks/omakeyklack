@@ -11,47 +11,22 @@ PREFIX="${PREFIX:-$HOME/.local}"
 # die Module beim Start in den Speicher gelesen, das Loeschen der Dateien
 # merkt der Prozess nicht. Zurueck blieb ein Tray-Symbol ohne Programm.
 #
-# Kein "pkill -f omakeyklack" - dieses Skript heisst selbst
-# omakeyklack-uninstall und schoesse sich damit ab, bevor es fertig ist.
-# Darum genau die Prozesse, die "omakeyklack" als eigenes Argument tragen:
-# das trifft "python3 -m omakeyklack", aber keinen Pfad, in dem der Name
-# nur vorkommt.
-# Gibt die PIDs laufender Instanzen aus.
-instanzen() {
-  local pid args a
-  for eintrag in /proc/[0-9]*; do
-    pid="${eintrag#/proc/}"
-    [ "$pid" = "$$" ] && continue
-    mapfile -d '' -t args < "$eintrag/cmdline" 2>/dev/null || continue
-    for a in "${args[@]}"; do
-      [ "$a" = "omakeyklack" ] && { echo "$pid"; break; }
-    done
-  done
-}
+# Der Helfer liegt entweder neben diesem Skript (Aufruf aus dem Quellbaum)
+# oder im installierten lib-Verzeichnis, das gleich geloescht wird.
+HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+for kandidat in "$HIER/bin/prozesse.sh" "$PREFIX/lib/omakeyklack/prozesse.sh"; do
+  if [ -f "$kandidat" ]; then
+    # shellcheck source=bin/prozesse.sh
+    . "$kandidat"
+    break
+  fi
+done
 
-beenden() {
-  local pids versuch
-  mapfile -t pids < <(instanzen)
-  [ "${#pids[@]}" -gt 0 ] || return 0
-
-  kill -TERM "${pids[@]}" 2>/dev/null || true
-  echo "Laufende Instanz beendet (PID ${pids[*]})."
-
-  # Bis zu drei Sekunden Zeit lassen - do_shutdown nimmt wayvibes mit, und
-  # dessen Abbau darf nicht mitten hinein abgewuergt werden.
-  for versuch in $(seq 1 30); do
-    sleep 0.1
-    mapfile -t pids < <(instanzen)
-    [ "${#pids[@]}" -eq 0 ] && return 0
-  done
-
-  # Wer jetzt noch steht, haengt. Eine haengende Instanz darf die
-  # Deinstallation nicht aufhalten.
-  echo "Eine Instanz reagierte nicht - beende sie hart."
-  kill -KILL "${pids[@]}" 2>/dev/null || true
-}
-
-beenden
+if declare -F omakeyklack_beenden >/dev/null; then
+  omakeyklack_beenden || true
+else
+  echo "Warnung: prozesse.sh nicht gefunden - eine laufende App laeuft weiter." >&2
+fi
 
 rm -rf "$PREFIX/lib/omakeyklack"
 rm -f "$PREFIX/bin/omakeyklack"

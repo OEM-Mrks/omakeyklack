@@ -1,5 +1,5 @@
 """omakeyklack - Tray-App und Soundpack-Umschalter fuer wayvibes."""
 
-__version__ = "0.5.6"
+__version__ = "0.6.0"
 APP_ID = "org.omakeyklack.Omakeyklack"
 APP_NAME = "omakeyklack"

@@ -38,14 +38,15 @@ sleep 1
 kill -0 "$STUB_PID" 2>/dev/null || { echo "Testaufbau: Stellvertreter startete nicht"; exit 2; }
 ok "Stellvertreter laeuft (PID $STUB_PID)"
 
-# Als omakeyklack-uninstall aufrufen - unter genau dem Namen, der die Falle
-# stellt.
-cp "$REPO/uninstall.sh" "$WORK/omakeyklack-uninstall"
-chmod +x "$WORK/omakeyklack-uninstall"
-
+# Die echte installierte Anordnung nachstellen: der Uninstaller liegt in
+# bin, der Prozesshelfer in lib. Genau von dort muss er ihn finden - nackt
+# kopiert wuerde der Test etwas pruefen, das es so nie gibt.
 export HOME="$WORK/home"
-mkdir -p "$HOME"
-ausgabe="$(PREFIX="$WORK/local" "$WORK/omakeyklack-uninstall" 2>&1)"
+mkdir -p "$HOME" "$WORK/local/bin" "$WORK/local/lib/omakeyklack"
+cp "$REPO/uninstall.sh" "$WORK/local/bin/omakeyklack-uninstall"
+chmod +x "$WORK/local/bin/omakeyklack-uninstall"
+cp "$REPO/bin/prozesse.sh" "$WORK/local/lib/omakeyklack/prozesse.sh"
+ausgabe="$(PREFIX="$WORK/local" "$WORK/local/bin/omakeyklack-uninstall" 2>&1)"
 rueckgabe=$?
 
 if [ "$rueckgabe" != 0 ]; then
@@ -68,9 +69,22 @@ grep -q 'Laufende Instanz beendet' <<< "$ausgabe" \
   && ok "das Beenden wird auch gemeldet" \
   || fail "das Beenden blieb unerwaehnt"
 
+# Der erste Lauf hat den Uninstaller mitgenommen - richtig so, er entfernt
+# ja auch sich selbst. Fuer den zweiten Lauf also neu hinlegen.
+if [ -e "$WORK/local/bin/omakeyklack-uninstall" ]; then
+  fail "uninstall.sh hat sich selbst nicht entfernt"
+else
+  ok "uninstall.sh entfernt auch sich selbst"
+fi
+mkdir -p "$WORK/local/bin" "$WORK/local/lib/omakeyklack"
+cp "$REPO/uninstall.sh" "$WORK/local/bin/omakeyklack-uninstall"
+chmod +x "$WORK/local/bin/omakeyklack-uninstall"
+cp "$REPO/bin/prozesse.sh" "$WORK/local/lib/omakeyklack/prozesse.sh"
+
 # Ohne laufende Instanz darf es keine Meldung und keinen Fehler geben.
-ausgabe2="$(PREFIX="$WORK/local" "$WORK/omakeyklack-uninstall" 2>&1)"
-if [ $? != 0 ]; then
+ausgabe2="$(PREFIX="$WORK/local" "$WORK/local/bin/omakeyklack-uninstall" 2>&1)"
+rueckgabe2=$?
+if [ "$rueckgabe2" != 0 ]; then
   fail "zweiter Lauf ohne laufende Instanz schlug fehl"
 elif grep -q 'Laufende Instanz' <<< "$ausgabe2"; then
   fail "zweiter Lauf meldet eine Instanz, die es nicht gibt"

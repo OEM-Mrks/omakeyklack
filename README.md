@@ -64,6 +64,15 @@ danach der Reihe nach alles, was zum Laufen gebraucht wird. Was fehlt, wird
 auf Nachfrage nachinstalliert: die Arch-Pakete, **wayvibes** aus dem AUR, die
 Gruppenmitgliedschaft und, wenn noch keins da ist, ein Satz Soundpacks.
 
+Zum Schluss startet die App von selbst und sitzt im Tray — sofern eine
+grafische Sitzung da ist. Über SSH oder im Container passiert nichts, dort
+gäbe es weder Fenster noch Leiste; `--no-start` schaltet es generell ab.
+
+Lief schon eine Instanz, wird sie vorher beendet und danach neu gestartet.
+Das ist bei einem Update Pflicht: Python hat die alten Module längst im
+Speicher, und weil die App eine Einzelinstanz ist, holte ein zweiter Start
+bloß die alte nach vorn — das Update sähe aus, als hätte es gewirkt.
+
 Ohne Rückfragen geht es mit `./install.sh --yes`, ohne jede Prüfung mit
 `./install.sh --no-deps`. Systemweit:
 
@@ -361,6 +370,14 @@ python3 tests/test_autostart_default.py
 Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
 der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
 Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
+
+```bash
+bash tests/test_install_starts_app.sh
+```
+
+Prüft den Start nach der Installation: dass ohne grafische Sitzung nichts
+gestartet wird, dass `--no-start` greift, dass der Prozesshelfer mitinstalliert
+wird und dass eine laufende Instanz vor dem Austausch der Dateien beendet wird.
 
 ```bash
 bash tests/test_boot_pipe.sh

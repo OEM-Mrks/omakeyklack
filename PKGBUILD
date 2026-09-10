@@ -1,6 +1,6 @@
 # Maintainer: Markus Oeffling
 pkgname=omakeyklack
-pkgver=0.5.6
+pkgver=0.6.0
 pkgrel=1
 pkgdesc="Tray-App und Soundpack-Umschalter fuer wayvibes"
 arch=('any')
@@ -32,6 +32,9 @@ LAUNCHER
 
   # Wird von "omakeyklack --check" aufgerufen.
   install -Dm755 bin/omakeyklack-doctor "$pkgdir/usr/bin/omakeyklack-doctor"
+  # Kein omakeyklack-uninstall im Paket - das erledigt pacman -R. Der
+  # Prozesshelfer liegt trotzdem bei, damit ihn ein Update nutzen kann.
+  install -Dm644 bin/prozesse.sh "$pkgdir/usr/lib/omakeyklack/prozesse.sh"
 
   install -Dm644 data/omakeyklack.desktop \
     "$pkgdir/usr/share/applications/omakeyklack.desktop"
