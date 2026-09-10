@@ -66,11 +66,17 @@ class Omakeyklack(Gtk.Application):
         """
         if self.config["autostart_initialized"]:
             return
+        # Der Merker fehlt - das kann dreierlei heissen:
+        #   frische Einrichtung          -> vorbelegen
+        #   von uninstall.sh auf false   -> vorbelegen (Deinstallieren ist
+        #                                   nicht dasselbe wie "will ich
+        #                                   nicht"; der Schluessel steht
+        #                                   ausdruecklich in der Datei)
+        #   Konfiguration von vor 0.4.1  -> nicht anfassen, die kennt den
+        #                                   Schluessel gar nicht
+        zurueckgesetzt = "autostart_initialized" in self.config.file_keys
         self.config["autostart_initialized"] = True
-        # Nur bei einer wirklich frischen Einrichtung eingreifen. Wer schon
-        # eine Konfiguration hat, hat seine Wahl getroffen - auch die, den
-        # Autostart nicht zu wollen.
-        if self.config.first_run and not autostart.is_enabled():
+        if (self.config.first_run or zurueckgesetzt) and not autostart.is_enabled():
             try:
                 autostart.set_enabled(True)
             except OSError as exc:

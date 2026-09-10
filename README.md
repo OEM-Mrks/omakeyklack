@@ -223,9 +223,19 @@ funktioniert.
 
 Genau einmal allerdings. Wer das Häkchen *Beim Anmelden starten* wegnimmt,
 findet es beim nächsten Start nicht wieder gesetzt vor — der Merker
-`autostart_initialized` in der Konfiguration verhindert das und übersteht auch
-eine Neuinstallation. Ebenso wird bei einem Upgrade nichts angelegt: Wer schon
-eine Konfiguration hat, hat seine Wahl getroffen.
+`autostart_initialized` in der Konfiguration verhindert das. Ebenso wird bei
+einem Upgrade nichts angelegt: Wer schon eine Konfiguration hat, hat seine
+Wahl getroffen.
+
+Deinstallieren ist dabei etwas anderes als abwählen. `uninstall.sh` löscht den
+Autostart-Eintrag und setzt den Merker ausdrücklich auf `false` — eine spätere
+Neuinstallation richtet ihn also wieder ein. Ohne das bliebe der Autostart nach
+einmaligem Deinstallieren für immer aus, obwohl ihn nie jemand abgewählt hat.
+
+Dass der Merker dabei auf `false` gesetzt und nicht entfernt wird, hat einen
+Grund: Ein *fehlender* Schlüssel bedeutet „Konfiguration von vor 0.4.1" und
+wird in Ruhe gelassen. Nur ein Schlüssel, der ausdrücklich dasteht und `false`
+sagt, heißt „zurückgesetzt, bitte neu vorbelegen".
 
 ## Wie es funktioniert
 
@@ -345,6 +355,14 @@ python3 tests/test_autostart_default.py
 Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
 der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
 Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
+
+```bash
+bash tests/test_autostart_cycle.sh
+```
+
+Spielt den ganzen Lebenszyklus durch — einrichten, abwählen, deinstallieren,
+neu einrichten — und prüft dabei die Unterscheidung zwischen abgewählt,
+zurückgesetzt und „alte Konfiguration".
 
 ```bash
 python3 tests/test_defaults.py

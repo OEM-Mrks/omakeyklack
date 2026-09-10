@@ -54,6 +54,12 @@ class Config(dict):
         # und soll sie nicht durch eine neue Vorbelegung ueberschrieben
         # bekommen.
         self.first_run = not path.exists()
+        # Welche Schluessel wirklich in der Datei standen. Ein fehlender
+        # Schluessel und einer, der ausdruecklich auf false steht, sehen im
+        # Dict sonst gleich aus - fuer autostart_initialized ist das aber
+        # der Unterschied zwischen "alte Konfiguration, nicht anfassen" und
+        # "von uninstall.sh zurueckgesetzt, bitte neu vorbelegen".
+        self.file_keys: set[str] = set()
         self.load()
 
     def load(self) -> None:
@@ -62,6 +68,7 @@ class Config(dict):
         except (OSError, ValueError):
             return
         if isinstance(raw, dict):
+            self.file_keys = set(raw)
             for key in DEFAULTS:
                 if key in raw:
                     self[key] = raw[key]
