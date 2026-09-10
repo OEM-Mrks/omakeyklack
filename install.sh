@@ -49,6 +49,11 @@ chmod +x "$BIN"
 # wer spaeter etwas kaputt macht, kann ihn direkt starten.
 install -m 755 "$SOURCE_DIR/bin/omakeyklack-doctor" "$BIN_DIR/omakeyklack-doctor"
 
+# Ebenso der Weg wieder hinaus. Wer ueber boot.sh installiert hat, hat
+# keinen Quelltext mehr auf der Platte - ohne das hier gaebe es dann kein
+# uninstall.sh mehr, das man aufrufen koennte.
+install -m 755 "$SOURCE_DIR/uninstall.sh" "$BIN_DIR/omakeyklack-uninstall"
+
 install -m 644 "$SOURCE_DIR/data/omakeyklack.desktop" "$APPS_DIR/omakeyklack.desktop"
 install -m 644 "$SOURCE_DIR"/data/icons/hicolor/scalable/apps/*.svg "$ICON_DIR/"
 

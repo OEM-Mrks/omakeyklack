@@ -28,6 +28,32 @@ Quickshell, GNOME mit AppIndicator-Erweiterung, KDE …).
 ## Installation
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/OEM-Mrks/omakeyklack/main/boot.sh | bash
+```
+
+Holt die neueste Fassung, entpackt sie in ein Wegwerf-Verzeichnis und ruft
+`install.sh` auf. Braucht nur `curl` und `tar` — kein `git`. Die Rückfragen
+laufen dabei über `/dev/tty`, gehen also nicht verloren, nur weil das Skript
+durch eine Pipe kommt.
+
+`... | bash -s -- --yes` beantwortet alles mit ja,
+`OMAKEYKLACK_VERSION=v0.4.2 ... | bash` nimmt eine bestimmte Fassung.
+
+### Lieber erst lesen, dann ausführen
+
+Ein Skript aus dem Netz direkt in die Shell zu leiten, verlangt Vertrauen. Wer
+das nicht aufbringen möchte — zu Recht —, macht dieselben zwei Schritte
+einzeln:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/OEM-Mrks/omakeyklack/main/boot.sh
+less boot.sh        # 90 Zeilen, lesbar in zwei Minuten
+bash boot.sh
+```
+
+### Aus dem Quelltext
+
+```bash
 git clone https://github.com/OEM-Mrks/omakeyklack.git
 cd omakeyklack
 ./install.sh
@@ -45,7 +71,9 @@ Ohne Rückfragen geht es mit `./install.sh --yes`, ohne jede Prüfung mit
 PREFIX=/usr/local sudo ./install.sh
 ```
 
-Deinstallieren mit `./uninstall.sh`.
+Deinstallieren mit `./uninstall.sh` — oder mit `omakeyklack-uninstall`, das
+neben dem Starter mitinstalliert wird. Wer über den Einzeiler installiert hat,
+hat schließlich keinen Quelltext mehr auf der Platte.
 
 ### Als Paket
 
