@@ -73,7 +73,13 @@ PREFIX=/usr/local sudo ./install.sh
 
 Deinstallieren mit `./uninstall.sh` — oder mit `omakeyklack-uninstall`, das
 neben dem Starter mitinstalliert wird. Wer über den Einzeiler installiert hat,
-hat schließlich keinen Quelltext mehr auf der Platte.
+hat schließlich keinen Quelltext mehr auf der Platte. Eine laufende Instanz
+wird dabei beendet; ohne das liefe sie weiter, weil Python die Module beim
+Start längst in den Speicher gelesen hat, und zurück bliebe ein Tray-Symbol
+ohne Programm.
+
+Die Konfiguration unter `~/.config/omakeyklack` und die Soundpacks bleiben
+liegen — beides gehört nicht der App.
 
 ### Als Paket
 
@@ -355,6 +361,15 @@ python3 tests/test_autostart_default.py
 Prüft die Vorbelegung des Autostarts in einem Wegwerf-`XDG_CONFIG_HOME`: dass
 der erste Start ihn anlegt, ein abgeschalteter abgeschaltet bleibt und ein
 Upgrade die Wahl eines bestehenden Anwenders nicht umwirft.
+
+```bash
+bash tests/test_uninstall_stops_app.sh
+```
+
+Startet einen Stellvertreter mit exakt der Kommandozeile der echten App und
+prüft, dass `uninstall.sh` ihn beendet — und dabei bis zur Schlusszeile
+durchläuft. Ein naives `pkill -f omakeyklack` täte beides nicht: Das Skript
+heißt selbst `omakeyklack-uninstall` und träfe sich mit.
 
 ```bash
 bash tests/test_autostart_cycle.sh

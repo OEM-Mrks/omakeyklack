@@ -5,6 +5,54 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-$HOME/.local}"
 
+# -- Laufende Instanz beenden ------------------------------------------
+
+# Ohne das laeuft die App nach der Deinstallation munter weiter: Python hat
+# die Module beim Start in den Speicher gelesen, das Loeschen der Dateien
+# merkt der Prozess nicht. Zurueck blieb ein Tray-Symbol ohne Programm.
+#
+# Kein "pkill -f omakeyklack" - dieses Skript heisst selbst
+# omakeyklack-uninstall und schoesse sich damit ab, bevor es fertig ist.
+# Darum genau die Prozesse, die "omakeyklack" als eigenes Argument tragen:
+# das trifft "python3 -m omakeyklack", aber keinen Pfad, in dem der Name
+# nur vorkommt.
+# Gibt die PIDs laufender Instanzen aus.
+instanzen() {
+  local pid args a
+  for eintrag in /proc/[0-9]*; do
+    pid="${eintrag#/proc/}"
+    [ "$pid" = "$$" ] && continue
+    mapfile -d '' -t args < "$eintrag/cmdline" 2>/dev/null || continue
+    for a in "${args[@]}"; do
+      [ "$a" = "omakeyklack" ] && { echo "$pid"; break; }
+    done
+  done
+}
+
+beenden() {
+  local pids versuch
+  mapfile -t pids < <(instanzen)
+  [ "${#pids[@]}" -gt 0 ] || return 0
+
+  kill -TERM "${pids[@]}" 2>/dev/null || true
+  echo "Laufende Instanz beendet (PID ${pids[*]})."
+
+  # Bis zu drei Sekunden Zeit lassen - do_shutdown nimmt wayvibes mit, und
+  # dessen Abbau darf nicht mitten hinein abgewuergt werden.
+  for versuch in $(seq 1 30); do
+    sleep 0.1
+    mapfile -t pids < <(instanzen)
+    [ "${#pids[@]}" -eq 0 ] && return 0
+  done
+
+  # Wer jetzt noch steht, haengt. Eine haengende Instanz darf die
+  # Deinstallation nicht aufhalten.
+  echo "Eine Instanz reagierte nicht - beende sie hart."
+  kill -KILL "${pids[@]}" 2>/dev/null || true
+}
+
+beenden
+
 rm -rf "$PREFIX/lib/omakeyklack"
 rm -f "$PREFIX/bin/omakeyklack"
 rm -f "$PREFIX/bin/omakeyklack-doctor"
